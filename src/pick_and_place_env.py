@@ -70,6 +70,6 @@ def create_env() -> mujoco.MjModel:
     cube_geom.type = mujoco.mjtGeom.mjGEOM_BOX
     cube_geom.size = np.array([0.02, 0.02, 0.02])
     cube_geom.rgba = np.array([0.8, 0, 0, 1])
-    cube_geom.mass = 1
+    cube_geom.mass = 0.2
 
     return world_spec.compile()
