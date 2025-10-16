@@ -7,6 +7,10 @@ import numpy as np
 import mujoco_viewer
 
 import time
+import dataset
+
+import torch
+
 
 active_keys = set()
 
@@ -118,6 +122,8 @@ def main():
     listener = keyboard.Listener(on_press=on_press, on_release=on_release)
     listener.start()
 
+    dataset_lerobot = dataset.create_new_dataset()
+
     model = pick_and_place_env.create_env()
     data = mujoco.MjData(model)
 
@@ -160,6 +166,8 @@ def main():
     model.actuator_biasprm[7, 1] = -800
     model.actuator_biasprm[7, 2] = -250
 
+    mujoco.mj_resetDataKeyframe(model, data, 0)
+
     with mujoco.viewer.launch_passive(
         model,
         data,
@@ -168,20 +176,46 @@ def main():
             if "R" in active_keys:
                 mujoco.mj_resetDataKeyframe(model, data, 0)
 
-            mujoco.mj_step(model, data)
+            # current qpos states
+            robot_states = data.qpos[0:9]
+            cube_states = data.qpos[9:16]
 
+            # teleop input
             linear_vels, angular_vels, gripper_status = (
                 update_desired_vels_from_keyboard()
             )
-
             joint_vels = cartesian_velocity_to_joint_velocity(
                 model, data, linear_vels, angular_vels, "hand"
             )
-            if gripper_status != 0:
-                data.ctrl[7] = 0 if gripper_status == -1 else 255
 
-            data.ctrl[:7] += joint_vels * model.opt.timestep
+            # control signals
+            joint_ctrls = data.ctrl[:7] + joint_vels * model.opt.timestep
+            gripper_ctrl = None
+            if gripper_status == 0:
+                gripper_ctrl = data.ctrl[7]
+            elif gripper_status == -1:
+                gripper_ctrl = 0
+            elif gripper_status == 1:
+                gripper_ctrl = 255
+            else:
+                print("unexpected gripper status")
+                viewer.close()
+                exit(1)
 
+            action = np.append(joint_ctrls, gripper_ctrl)
+
+            dataset_lerobot.add_frame(
+                task="pick_and_place",
+                frame={
+                    "observation.state": torch.from_numpy(robot_states),
+                    "observation.cube": torch.from_numpy(cube_states),
+                    "action": torch.from_numpy(action),
+                },
+                timestamp=data.time,
+            )
+
+            data.ctrl[:] = action
+            mujoco.mj_step(model, data)
             viewer.sync()
 
             # print(
