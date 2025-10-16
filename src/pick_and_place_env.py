@@ -9,6 +9,11 @@ def create_env() -> mujoco.MjModel:
 
     light = world.add_light()
     light.pos = np.array([0, 0, 3])
+    light.dir = np.array([0, 0, -1])
+    light.diffuse = np.array([0.7, 0.7, 0.7])
+    light.ambient = np.array([0.4, 0.4, 0.4])
+    light.specular = np.array([0.3, 0.3, 0.3])
+    light.castshadow = True
 
     floor = world.add_geom()
     floor.name = "floor"
@@ -55,28 +60,72 @@ def create_env() -> mujoco.MjModel:
     leg4.pos = np.array([-0.9, -0.7, -0.4])
     leg4.rgba = np.array([0.5, 0.3, 0.1, 1])
 
+    # goal zone
+    goal = table.add_geom()
+    goal.name = "goal"
+    goal.type = mujoco.mjtGeom.mjGEOM_BOX
+    goal.size = np.array([0.15, 0.15, 0.01])
+    goal.pos = np.array([-0.9 + 0.15, -0.7 + 0.15, 0.03])
+    goal.rgba = np.array([0.0, 0.5, 0.0, 0.9])
+
     panda_spec = mujoco.MjSpec.from_file(panda_mj_description.MJCF_PATH)
+    # use our own light instead
+    panda_spec.delete(panda_spec.lights[0])
+
     attachment_site = table.add_site(
         name="robot_mount",
         pos=[-0.8, 0, 0.03],
     )
     world_spec.attach(child=panda_spec, site=attachment_site)
 
-    # cube to pick up
-    cube = world.add_body()
-    cube.name = "cube"
-    cube.pos = np.array([-0.3, 0, 1])
-    cube.add_freejoint()
+    # objects on table
+    cube_0 = world.add_body()
+    cube_0.name = "cube_0"
+    cube_0.pos = np.array([-0.3, 0, 1])
+    cube_0.add_freejoint()
 
-    cube_geom = cube.add_geom()
-    cube_geom.name = "cube_geom"
-    cube_geom.type = mujoco.mjtGeom.mjGEOM_BOX
-    cube_geom.size = np.array([0.05, 0.02, 0.02])
-    cube_geom.rgba = np.array([0.8, 0, 0, 1])
-    cube_geom.mass = 0.2
+    cube_geom_0 = cube_0.add_geom()
+    cube_geom_0.name = "cube_geom_0"
+    cube_geom_0.type = mujoco.mjtGeom.mjGEOM_BOX
+    cube_geom_0.size = np.array([0.05, 0.02, 0.02])
+    cube_geom_0.rgba = np.array([0.8, 0, 0, 1])
+    cube_geom_0.mass = 0.2
     # cube_geom.friction = np.array([3.0, 0.005, 0.0001])
-    cube_geom.solref = np.array([0.01, 1])
-    cube_geom.solimp = np.array([0.9, 0.99, 0.001, 0.5 * 0.001, 2])
-    cube_geom.condim = 6
+    cube_geom_0.solref = np.array([0.01, 1])
+    cube_geom_0.solimp = np.array([0.9, 0.99, 0.001, 0.5 * 0.001, 2])
+    cube_geom_0.condim = 6
+
+    cube_1 = world.add_body()
+    cube_1.name = "cube_1"
+    cube_1.pos = np.array([-0.3, 0.4, 1])
+    cube_1.add_freejoint()
+
+    cube_geom_1 = cube_1.add_geom()
+    cube_geom_1.name = "cube_geom_1"
+    cube_geom_1.type = mujoco.mjtGeom.mjGEOM_BOX
+    cube_geom_1.size = np.array([0.02, 0.02, 0.02])
+    cube_geom_1.rgba = np.array([0, 0, 0.8, 1])
+    cube_geom_1.mass = 0.2
+    cube_geom_1.solref = np.array([0.01, 1])
+    cube_geom_1.solimp = np.array([0.9, 0.99, 0.001, 0.5 * 0.001, 2])
+    cube_geom_1.condim = 6
+
+    cylinder = world.add_body()
+    cylinder.name = "cylinder"
+    cylinder.name = "cylinder"
+    cylinder.pos = np.array([-0.4, -0.5, 1])
+    cylinder.add_freejoint()
+
+    cylinder_geom = cylinder.add_geom()
+    cylinder_geom.name = "cylinder_geom"
+    cylinder_geom.type = mujoco.mjtGeom.mjGEOM_CYLINDER
+    cylinder_geom.size = np.array([0.02, 0.04, 0])
+    cylinder_geom.rgba = np.array([0, 0.8, 0, 1])
+    cylinder_geom.mass = 0.2
+
+    cylinder_geom.friction = np.array([1.0, 0.005, 0.0004])
+    cylinder_geom.solref = np.array([0.01, 1])
+    cylinder_geom.solimp = np.array([0.9, 0.99, 0.001, 0.5 * 0.001, 2])
+    cylinder_geom.condim = 6
 
     return world_spec.compile()

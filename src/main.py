@@ -138,22 +138,36 @@ def main():
 
     model.key_qpos[0] = np.array(
         [
-            -0.0261624,
-            0.167415,
-            0.0135335,
-            -2.40325,
-            0.0615261,
-            2.57368,
-            0.754441,
-            0.0399996,
-            0.0399993,
+            -0.0341773,
+            0.167353,
+            0.0365039,
+            -2.40321,
+            0.0610099,
+            2.57253,
+            0.754311,
+            0.041,
+            0.041,
             -0.3,
             0.0,
-            0.844915,
-            1,
+            0.845,
+            1.0,
             0.0,
             0.0,
             0.0,
+            -0.3,
+            0.4,
+            0.845,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            -0.4,
+            -0.5,
+            0.864,
+            1.0,
+            0.0,
+            0.0002,
+            0.0176,
         ]
     )
     model.key_ctrl[0] = np.array(
@@ -182,7 +196,7 @@ def main():
 
                 # current qpos states
                 robot_states = data.qpos[0:9].copy()
-                cube_states = data.qpos[9:16].copy()
+                obj_states = data.qpos[9 : (7 * 3) + 9].copy()
 
                 # teleop input
                 linear_vels, angular_vels, gripper_status = (
@@ -212,7 +226,7 @@ def main():
                     task="pick_and_place",
                     frame={
                         "observation.state": torch.from_numpy(robot_states),
-                        "observation.cube": torch.from_numpy(cube_states),
+                        "observation.objs": torch.from_numpy(obj_states),
                         "action": torch.from_numpy(action),
                     },
                     timestamp=data.time,

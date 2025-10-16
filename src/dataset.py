@@ -21,9 +21,9 @@ def create_new_dataset() -> LeRobotDataset:
                 "dtype": "float64",
                 "shape": (9,),
             },
-            "observation.cube": {
+            "observation.objs": {
                 "dtype": "float64",
-                "shape": (7,),
+                "shape": (7 * 3,),
             },
             "action": {
                 "dtype": "float64",

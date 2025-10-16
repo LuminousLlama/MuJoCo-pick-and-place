@@ -26,7 +26,7 @@ try:
     first_frame = dataset[int(from_idx)]
     # last_frame = dataset[int(to_idx - 1)]
     data.qpos[:9] = first_frame["observation.state"].numpy()
-    data.qpos[9:16] = first_frame["observation.cube"].numpy()
+    data.qpos[9:] = first_frame["observation.objs"].numpy()
     data.ctrl[:] = first_frame["action"].numpy()
 
     mujoco.mj_forward(model, data)
@@ -43,7 +43,7 @@ try:
 
                 # Force state to match recording (overrides physics)
                 data.qpos[:9] = frame["observation.state"].numpy()
-                data.qpos[9:16] = frame["observation.cube"].numpy()
+                data.qpos[9:] = frame["observation.objs"].numpy()
 
                 # Apply recorded action
                 data.ctrl[:] = frame["action"].numpy()
