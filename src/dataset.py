@@ -14,7 +14,7 @@ def create_new_dataset() -> LeRobotDataset:
 
     dataset = LeRobotDataset.create(
         repo_id=repo_id,
-        fps=60,
+        fps=500,
         robot_type="panda",
         features={
             "observation.state": {

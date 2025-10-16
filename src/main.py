@@ -11,6 +11,8 @@ import dataset
 
 import torch
 
+import lerobot.datasets
+
 
 active_keys = set()
 
@@ -167,60 +169,65 @@ def main():
     model.actuator_biasprm[7, 2] = -250
 
     mujoco.mj_resetDataKeyframe(model, data, 0)
+    mujoco.mj_forward(model, data)
 
     with mujoco.viewer.launch_passive(
         model,
         data,
     ) as viewer:
-        while viewer.is_running():
-            if "R" in active_keys:
-                mujoco.mj_resetDataKeyframe(model, data, 0)
+        try:
+            while viewer.is_running():
+                if "R" in active_keys:
+                    mujoco.mj_resetDataKeyframe(model, data, 0)
 
-            # current qpos states
-            robot_states = data.qpos[0:9]
-            cube_states = data.qpos[9:16]
+                # current qpos states
+                robot_states = data.qpos[0:9].copy()
+                cube_states = data.qpos[9:16].copy()
 
-            # teleop input
-            linear_vels, angular_vels, gripper_status = (
-                update_desired_vels_from_keyboard()
-            )
-            joint_vels = cartesian_velocity_to_joint_velocity(
-                model, data, linear_vels, angular_vels, "hand"
-            )
+                # teleop input
+                linear_vels, angular_vels, gripper_status = (
+                    update_desired_vels_from_keyboard()
+                )
+                joint_vels = cartesian_velocity_to_joint_velocity(
+                    model, data, linear_vels, angular_vels, "hand"
+                )
 
-            # control signals
-            joint_ctrls = data.ctrl[:7] + joint_vels * model.opt.timestep
-            gripper_ctrl = None
-            if gripper_status == 0:
-                gripper_ctrl = data.ctrl[7]
-            elif gripper_status == -1:
-                gripper_ctrl = 0
-            elif gripper_status == 1:
-                gripper_ctrl = 255
-            else:
-                print("unexpected gripper status")
-                viewer.close()
-                exit(1)
+                # control signals
+                joint_ctrls = data.ctrl[:7].copy() + joint_vels * model.opt.timestep
+                gripper_ctrl = None
+                if gripper_status == 0:
+                    gripper_ctrl = data.ctrl[7]
+                elif gripper_status == -1:
+                    gripper_ctrl = 0
+                elif gripper_status == 1:
+                    gripper_ctrl = 255
+                else:
+                    print("unexpected gripper status")
+                    viewer.close()
+                    exit(1)
 
-            action = np.append(joint_ctrls, gripper_ctrl)
+                action = np.append(joint_ctrls, gripper_ctrl).copy()
 
-            dataset_lerobot.add_frame(
-                task="pick_and_place",
-                frame={
-                    "observation.state": torch.from_numpy(robot_states),
-                    "observation.cube": torch.from_numpy(cube_states),
-                    "action": torch.from_numpy(action),
-                },
-                timestamp=data.time,
-            )
+                dataset_lerobot.add_frame(
+                    task="pick_and_place",
+                    frame={
+                        "observation.state": torch.from_numpy(robot_states),
+                        "observation.cube": torch.from_numpy(cube_states),
+                        "action": torch.from_numpy(action),
+                    },
+                    timestamp=data.time,
+                )
 
-            data.ctrl[:] = action
-            mujoco.mj_step(model, data)
-            viewer.sync()
+                data.ctrl[:] = action
+                mujoco.mj_step(model, data)
+                viewer.sync()
 
-            # print(
-            #     f"Force: {data.actuator_force[7]:.8f} Length: {data.actuator_length[7]:.4f} vel: {data.actuator_velocity[7]:.4f}"
-            # )
+                # print(
+                #     f"Force: {data.actuator_force[7]:.8f} Length: {data.actuator_length[7]:.4f} vel: {data.actuator_velocity[7]:.4f}"
+                # )
+        except KeyboardInterrupt:
+            dataset_lerobot.save_episode()
+            viewer.close()
 
 
 if __name__ == "__main__":
