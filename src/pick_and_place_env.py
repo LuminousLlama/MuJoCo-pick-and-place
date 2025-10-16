@@ -26,7 +26,7 @@ def create_env() -> mujoco.MjModel:
     tabletop.size = np.array([1.0, 0.8, 0.025])
     tabletop.rgba = np.array([0.6, 0.4, 0.2, 1])
 
-    # Add table legs (4 cylinders)
+    # table legs (4 cylinders)
     leg1 = table.add_geom()
     leg1.name = "leg1"
     leg1.type = mujoco.mjtGeom.mjGEOM_CYLINDER
@@ -56,20 +56,27 @@ def create_env() -> mujoco.MjModel:
     leg4.rgba = np.array([0.5, 0.3, 0.1, 1])
 
     panda_spec = mujoco.MjSpec.from_file(panda_mj_description.MJCF_PATH)
-    attachment_site = table.add_site(name="robot_mount", pos=[0, -0.65, 0.03])
+    attachment_site = table.add_site(
+        name="robot_mount",
+        pos=[-0.8, 0, 0.03],
+    )
     world_spec.attach(child=panda_spec, site=attachment_site)
 
     # cube to pick up
-    # cube = world.add_body()
-    # cube.name = "cube"
-    # cube.pos = np.array([0, 0, 2])
-    # cube.add_freejoint()
+    cube = world.add_body()
+    cube.name = "cube"
+    cube.pos = np.array([-0.3, 0, 1])
+    cube.add_freejoint()
 
-    # cube_geom = cube.add_geom()
-    # cube_geom.name = "cube_geom"
-    # cube_geom.type = mujoco.mjtGeom.mjGEOM_BOX
-    # cube_geom.size = np.array([0.02, 0.02, 0.02])
-    # cube_geom.rgba = np.array([0.8, 0, 0, 1])
-    # cube_geom.mass = 0.2
+    cube_geom = cube.add_geom()
+    cube_geom.name = "cube_geom"
+    cube_geom.type = mujoco.mjtGeom.mjGEOM_BOX
+    cube_geom.size = np.array([0.05, 0.02, 0.02])
+    cube_geom.rgba = np.array([0.8, 0, 0, 1])
+    cube_geom.mass = 0.2
+    # cube_geom.friction = np.array([3.0, 0.005, 0.0001])
+    cube_geom.solref = np.array([0.01, 1])
+    cube_geom.solimp = np.array([0.9, 0.99, 0.001, 0.5 * 0.001, 2])
+    cube_geom.condim = 6
 
     return world_spec.compile()
